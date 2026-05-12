@@ -195,29 +195,73 @@ def build_plan(root: Path, dest_root: Path, *, mode: str = "hybrid", light_scan:
     }
 
 
-def apply_plan(plan: dict, *, allow_duplicate_review: bool = False) -> dict:
+def review_destination(dest_root: Path, source: Path) -> Path:
+    return dest_root / "Duplicate Review" / source.name
+
+
+def apply_plan(plan: dict, *, operation: str = "move", duplicate_action: str = "skip", allow_duplicate_review: bool = False) -> dict:
     moved, skipped, errors = [], [], []
+    if operation not in {"move", "copy"}:
+        raise ValueError("operation must be 'move' or 'copy'")
+    if allow_duplicate_review:
+        duplicate_action = "move-to-review"
     for row in plan.get("plan", []):
         action = row.get("action")
-        if action == "duplicate-review" and not allow_duplicate_review:
+        if action == "duplicate-review" and duplicate_action == "skip":
             skipped.append({"source": row.get("source"), "reason": "duplicate-review requires manual decision"})
             continue
         if action not in {"move", "duplicate-review"}:
             skipped.append({"source": row.get("source"), "reason": f"unsupported action {action}"})
             continue
         src = Path(row["source"])
-        dest = Path(row["destination"])
+        dest = review_destination(Path(plan["destination_root"]), src) if action == "duplicate-review" else Path(row["destination"])
         try:
             if not src.exists():
                 skipped.append({"source": str(src), "reason": "source missing"})
                 continue
             dest.parent.mkdir(parents=True, exist_ok=True)
             final_dest, _ = unique_destination(dest)
-            shutil.move(str(src), str(final_dest))
-            moved.append({"source": str(src), "destination": str(final_dest)})
+            if operation == "copy":
+                shutil.copy2(str(src), str(final_dest))
+            else:
+                shutil.move(str(src), str(final_dest))
+            moved.append({"source": str(src), "destination": str(final_dest), "operation": operation, "duplicate_review": action == "duplicate-review"})
         except OSError as exc:
             errors.append({"source": str(src), "destination": str(dest), "error": str(exc)})
     return {"moved": moved, "skipped": skipped, "errors": errors}
+
+
+def undo_last_apply(dest_root: Path) -> dict:
+    index_path = dest_root / ".wizard-sorter" / "index.json"
+    if not index_path.exists():
+        raise FileNotFoundError(f"index not found: {index_path}")
+    data = json.loads(index_path.read_text())
+    last_apply = data.get("last_apply") or {}
+    undone, skipped, errors = [], [], []
+    for item in reversed(last_apply.get("moved", [])):
+        source = Path(item["source"])
+        destination = Path(item["destination"])
+        operation = item.get("operation", "move")
+        try:
+            if not destination.exists():
+                skipped.append({"destination": str(destination), "reason": "destination missing"})
+                continue
+            if operation == "copy":
+                destination.unlink()
+                undone.append({"operation": "delete-copy", "destination": str(destination)})
+                continue
+            if source.exists():
+                skipped.append({"destination": str(destination), "reason": "original source path already exists"})
+                continue
+            source.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(destination), str(source))
+            undone.append({"operation": "move-back", "source": str(source), "destination": str(destination)})
+        except OSError as exc:
+            errors.append({"source": str(source), "destination": str(destination), "error": str(exc)})
+    data["last_undo"] = {"undone_at": now_iso(), "undone": undone, "skipped": skipped, "errors": errors}
+    data["last_apply"] = None
+    index_path.write_text(json.dumps(data, indent=2))
+    return {"undone": undone, "skipped": skipped, "errors": errors, "index": str(index_path)}
 
 
 def write_index(dest_root: Path, plan: dict, apply_result: Optional[dict] = None) -> Path:

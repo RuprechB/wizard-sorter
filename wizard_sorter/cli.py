@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import List, Optional
 
 try:
-    from .core import apply_plan, build_plan, fallback_find, search_index, write_index
+    from .core import apply_plan, build_plan, fallback_find, search_index, undo_last_apply, write_index
 except ImportError:  # Allows `python wizard_sorter/cli.py ...` during local development.
-    from core import apply_plan, build_plan, fallback_find, search_index, write_index
+    from core import apply_plan, build_plan, fallback_find, search_index, undo_last_apply, write_index
 
 MODES = ["hybrid", "life-area", "file-type", "date", "action-state"]
 
@@ -193,9 +193,20 @@ def cmd_apply(args: argparse.Namespace) -> int:
     if not args.yes:
         print("Refusing to apply without --yes. Review the plan first, then rerun with --yes.")
         return 2
-    result = apply_plan(plan, allow_duplicate_review=args.allow_duplicate_review)
+    duplicate_action = "move-to-review" if args.allow_duplicate_review else args.duplicate_action
+    result = apply_plan(plan, operation=args.operation, duplicate_action=duplicate_action)
     index_path = write_index(Path(plan["destination_root"]), plan, result)
     print(json.dumps({"result": result, "index": str(index_path)}, indent=2))
+    return 0 if not result["errors"] else 1
+
+
+def cmd_undo(args: argparse.Namespace) -> int:
+    root = Path(args.root).expanduser().resolve()
+    if not args.yes:
+        print("Refusing to undo without --yes. Undo moves files back and deletes copies created by copy mode.")
+        return 2
+    result = undo_last_apply(root)
+    print(json.dumps(result, indent=2))
     return 0 if not result["errors"] else 1
 
 
@@ -245,8 +256,15 @@ def build_parser() -> argparse.ArgumentParser:
     apply = sub.add_parser("apply", help="Apply a reviewed plan")
     apply.add_argument("--plan", required=True)
     apply.add_argument("--yes", action="store_true", help="Confirm file moves")
-    apply.add_argument("--allow-duplicate-review", action="store_true", help="Move duplicate-review rows instead of skipping them")
+    apply.add_argument("--operation", choices=["move", "copy"], default="move", help="Move files or copy them while leaving originals in place")
+    apply.add_argument("--duplicate-action", choices=["skip", "move-to-review"], default="skip", help="How to handle duplicate-review rows")
+    apply.add_argument("--allow-duplicate-review", action="store_true", help="Deprecated alias for --duplicate-action move-to-review")
     apply.set_defaults(func=cmd_apply)
+
+    undo = sub.add_parser("undo", help="Undo the last apply recorded in .wizard-sorter/index.json")
+    undo.add_argument("--root", required=True, help="Sorted destination root containing .wizard-sorter/index.json")
+    undo.add_argument("--yes", action="store_true", help="Confirm undo")
+    undo.set_defaults(func=cmd_undo)
 
     find = sub.add_parser("find", help="Find files from .wizard-sorter/index.json, with optional fallback path search")
     find.add_argument("query")

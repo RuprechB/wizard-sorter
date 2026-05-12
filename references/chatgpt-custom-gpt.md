@@ -25,6 +25,8 @@ V1 content analysis:
 Safety:
 - Always dry-run before moves.
 - Confirm before writes.
+- Offer copy mode for safer trials.
+- Offer undo for the last apply record.
 - Never change file permissions.
 - Never delete duplicates automatically.
 

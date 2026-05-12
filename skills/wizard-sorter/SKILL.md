@@ -11,6 +11,8 @@ Run onboarding unless `WIZARD_SORTER.md` exists and contains usable preferences.
 
 Always dry-run first. Never move, rename, delete, or deduplicate files without explicit approval. Duplicates are review items; do not delete automatically.
 
+Prefer `--operation copy` when the user is nervous or testing. Use `undo` to reverse the last apply: move mode moves files back; copy mode deletes copies created by Wizard Sorter.
+
 Use both memory layers:
 
 - `WIZARD_SORTER.md` for human-readable preferences, taxonomy, exclusions, and corrections.
@@ -37,6 +39,8 @@ Use the CLI from the project root:
 python -m wizard_sorter.cli init --path <destination>
 python -m wizard_sorter.cli plan --root <source> --dest <destination> --mode hybrid --dedupe --light-scan --output plan.json
 python -m wizard_sorter.cli apply --plan plan.json --yes
+python -m wizard_sorter.cli apply --plan plan.json --operation copy --duplicate-action move-to-review --yes
+python -m wizard_sorter.cli undo --root <destination> --yes
 ```
 
 Show the user the plan before applying.

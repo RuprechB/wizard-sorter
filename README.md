@@ -76,7 +76,23 @@ The command writes `plan.json` and prints a readable review summary. Review it, 
 wizard-sorter apply --plan plan.json --yes
 ```
 
-Duplicate rows are skipped by default and must be reviewed manually.
+Duplicate rows are skipped by default and must be reviewed manually. To preserve originals, copy instead of move:
+
+```bash
+wizard-sorter apply --plan plan.json --operation copy --yes
+```
+
+To place duplicates in a review folder instead of skipping them:
+
+```bash
+wizard-sorter apply --plan plan.json --duplicate-action move-to-review --yes
+```
+
+Undo the last apply recorded in `.wizard-sorter/index.json`:
+
+```bash
+wizard-sorter undo --root ~/SortedFiles --yes
+```
 
 Find files from the generated index:
 
@@ -89,8 +105,10 @@ wizard-sorter find tax --root ~/SortedFiles --fallback
 Wizard Sorter is designed to be conservative:
 
 - No moves without approval.
+- Copy mode is available when users want to preserve originals.
+- Undo can move files back after move mode, or delete copies created by copy mode.
 - No deletes in v1.
-- Duplicate detection creates review items, not deletion commands.
+- Duplicate detection creates review items, not deletion commands; duplicates can be moved/copied into `Duplicate Review`.
 - Light scan is optional and limited to text-like files.
 - Excludes common dangerous folders like `.git`, `node_modules`, virtual envs, and `.wizard-sorter`.
 
