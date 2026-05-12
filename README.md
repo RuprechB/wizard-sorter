@@ -96,13 +96,19 @@ Wizard Sorter is designed to be conservative:
 
 ## Claude / OpenClaw skill
 
-Use:
+Packaged skill:
 
 ```text
-skills/claude-openclaw/SKILL.md
+dist/wizard-sorter.skill
 ```
 
-Install or copy that folder into your agent's skill system.
+Source skill folder:
+
+```text
+skills/wizard-sorter/SKILL.md
+```
+
+Install the `.skill` file if your agent supports packaged skills, or copy the source folder into your agent's skill system.
 
 ## ChatGPT Custom GPT
 
@@ -136,7 +142,8 @@ See `references/google-drive-roadmap.md`.
 
 ```text
 wizard_sorter/                 Python CLI and sorting engine
-skills/claude-openclaw/        Claude/OpenClaw skill entry point
+skills/wizard-sorter/          Claude/OpenClaw skill source
+  dist/wizard-sorter.skill      Packaged Claude/OpenClaw skill
 references/                    ChatGPT instructions and Drive roadmap
 examples/                      Example memory and plan files
 ```

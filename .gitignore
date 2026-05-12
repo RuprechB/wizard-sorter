@@ -2,7 +2,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
-dist/
+dist/*
+!dist/*.skill
 build/
 *.egg-info/
 .wizard-sorter/
