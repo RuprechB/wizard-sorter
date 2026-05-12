@@ -3,18 +3,24 @@ name = "wizard-sorter"
 version = "0.1.0"
 description = "AI-assisted local file sorter with durable filing memory, dry-run plans, approved moves, dedupe, and optional light content scanning."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 authors = [{ name = "Wizard Sorter contributors" }]
-license = { text = "MIT" }
+license = "MIT"
 keywords = ["files", "organizer", "ai", "claude", "chatgpt", "openclaw", "google-drive"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
 
 [project.scripts]
 wizard-sorter = "wizard_sorter.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["wizard_sorter*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

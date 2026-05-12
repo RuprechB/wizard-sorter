@@ -46,7 +46,13 @@ python -m wizard_sorter.cli --help
 
 ## Quick start
 
-Create the memory file in your destination folder:
+Create the memory file in your destination folder. For guided setup, use onboarding:
+
+```bash
+wizard-sorter onboard --path ~/SortedFiles
+```
+
+For a default template only:
 
 ```bash
 wizard-sorter init --path ~/SortedFiles
@@ -64,13 +70,19 @@ wizard-sorter plan \
   --output plan.json
 ```
 
-Review `plan.json`. Then apply after approval:
+The command writes `plan.json` and prints a readable review summary. Review it, then apply after approval:
 
 ```bash
 wizard-sorter apply --plan plan.json --yes
 ```
 
 Duplicate rows are skipped by default and must be reviewed manually.
+
+Find files from the generated index:
+
+```bash
+wizard-sorter find tax --root ~/SortedFiles --fallback
+```
 
 ## Safety model
 
